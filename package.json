@@ -1,0 +1,32 @@
+{
+  "name": "xload",
+  "version": "1.0.0",
+  "description": "dropdown load data plugin",
+  "main": "src/xload.js",
+  "dependencies": {
+    "del": "^2.2.2",
+    "gulp-cache": "^0.4.5",
+    "gulp-concat": "^2.6.0",
+    "gulp": "^3.9.1",
+    "gulp-notify": "^2.2.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^2.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeeJim/xLoad.git"
+  },
+  "keywords": [
+    "dropdown"
+  ],
+  "author": "leejim",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LeeJim/xLoad/issues"
+  },
+  "homepage": "https://github.com/LeeJim/xLoad#readme"
+}
