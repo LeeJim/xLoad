@@ -8,8 +8,9 @@
   'use strict'
 
   var $win = $(window),
-      $doc = $(document),
-      clientHeight = $win.height(); //设备浏览器高度
+      $doc = $(document);
+
+  var handleScroll; // 处理滚动的通用函数
 
   $.fn.xload = function(options){
     return new Xload(this, options);
@@ -22,8 +23,8 @@
     that.$element = element; //jquery对象
     that.element = element[0]; //element对象
 
-    // 是否正在加载
-    that.isLoading = false;
+    
+    that.isLoading = false; //是否正在加载
 
     that.init(options);
   }
@@ -33,8 +34,8 @@
     var that = this;
     // var $scrollArea = that.$element;
 
-    that.opts = $.extend(true, {
-      loadFn: that.noop,
+    that.opts = $.extend(false, {
+      
       distance: 50,
       needAutoLoad: true,
       scrollArea: window,
@@ -46,9 +47,6 @@
 
     that.$nomore = $(that.opts.html_nomore);
     that.$loading = $(that.opts.html_loading);
-
-    // 滚动区域的底部位置
-    // that.scrollAreaBottom = $scrollArea.position().top + $scrollArea.height();
 
     if(that.opts.scrollArea == window) {
       that.$scrollArea = $win;
@@ -68,19 +66,16 @@
 
     that.autoLoad();
 
-    that.$scrollArea.on('scroll', that.handleScroll.bind(that));
+    handleScroll = that.handleScroll.bind(that);
+
+    that.$scrollArea.on('scroll', handleScroll);
   }
-
-  // 默认函数
-  Xload.prototype.noop = function(){
-
-  };
 
   // 自动加载至满屏
   Xload.prototype.autoLoad = function(){
     var that = this;
 
-    if( that.opts.needAutoLoad && (that.$scrollArea.height() - that.opts.distance <= that.clientHeight) ) {
+    if( that.opts.needAutoLoad && (that.scrollHeight - that.opts.distance <= that.clientHeight) ) {
       that.handleLoad(that.autoLoad);
     }
     else {
@@ -108,8 +103,28 @@
     _request(that.opts.ajaxParams, function(data){
       that.isLoading = false;
       that.$loading.remove();
-      that.opts.onAjaxSuccess(data);
-      that.refreshScrollHeight();
+
+      // 请求成功时
+      that.opts.onAjaxSuccess(data, function(options){
+        that.refreshScrollHeight();
+        
+
+        // 当没有更多数据、返回数据为空时
+        if(options.status === 'empty' || options.status === 'nomore'){
+          that.$element.append(that.$nomore);
+          // that.$scrollArea.off('scroll', handleScroll)
+          that.remove();
+        }
+        // 当返回数据错误时
+        else {
+          callback && callback.call(that); //自动加载时执行的回调
+          if(options.status === 'error') {
+            console.log('error');
+          }
+        }
+
+      });
+      
     })
   }
 
@@ -126,13 +141,18 @@
     }
   }
 
+  // 移除下拉加载
+  Xload.prototype.remove = function(){
+    this.$scrollArea.off('scroll', handleScroll)
+  }
+
   // 封装AJAX请求
   function _request(options, successCB, errorCB){
     $.ajax({
       type: 'POST',
       url: options.url,
       data: options.data,
-      timeout: options.timeout || 3000,
+      timeout: options.timeout || 10000,
       success: successCB,
       error: errorCB || function(error){
         alert(error)
