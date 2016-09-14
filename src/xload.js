@@ -61,7 +61,12 @@
 
     // 调整窗口
     $win.on('resize', function(){
-
+      if(that.opts.scrollArea == window){
+        that.clientHeight = window.innerHeight;
+      }
+      else {
+        that.clientHeight = that.element.clientHeight;
+      }
     })
 
     that.autoLoad();
