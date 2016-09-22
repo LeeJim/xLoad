@@ -10,7 +10,8 @@
   var $win = $(window),
       $doc = $(document);
 
-  var handleScroll; // 处理滚动的通用函数
+  // 处理滚动的通用函数
+  var handleScroll; 
 
   $.fn.xload = function(options){
     return new Xload(this, options);
@@ -20,11 +21,14 @@
   function Xload(element, options){
     var that = this;
 
-    that.$element = element; //jquery对象
-    that.element = element[0]; //element对象
+    // jquery对象
+    that.$element = element;
 
-    
-    that.isLoading = false; //是否正在加载
+    // element对象
+    that.element = element[0];
+
+    // 是否正在加载
+    that.isLoading = false;
 
     that.init(options);
   }
@@ -39,14 +43,22 @@
       distance: 50,
       needAutoLoad: true,
       scrollArea: window,
+      tolerance_MAX: 3,
 
+      html_empty: '<p class="x-nomore">暂无数据</p>',
       html_nomore: '<p class="x-nomore">没有更多数据</p>',
       html_loading: '<p class="x-loading">正在加载...</p>'
 
     }, options);
 
+    that.$empty = $(that.opts.html_empty);
     that.$nomore = $(that.opts.html_nomore);
     that.$loading = $(that.opts.html_loading);
+
+    //成功加载次数
+    that.successLoadTimes = 0;
+    //失败加载次数
+    that.failLoadTimes = 0; 
 
     if(that.opts.scrollArea == window) {
       that.$scrollArea = $win;
@@ -69,6 +81,7 @@
       }
     })
 
+    // 自动加载至满屏
     that.autoLoad();
 
     handleScroll = that.handleScroll.bind(that);
@@ -111,21 +124,54 @@
 
       // 请求成功时
       that.opts.onAjaxSuccess(data, function(options){
+
+        // 更新容器的高度
         that.refreshScrollHeight();
         
+        // 当返回数据错误时
+        if(options.status === 'error') {
 
+          that.failLoadTimes++;
+
+          // 失败次数超过容忍次数 提示错误 停止加载
+          if(that.failLoadTimes >= that.tolerance_MAX) {
+
+            // 移除滚动事件
+            that.remove(); 
+
+            alert('网络异常，请重新加载')
+          }
+          else {
+
+            setTimeout(function(){
+              // 自动加载时执行的回调
+              callback && callback.call(that);
+            }, 2000);
+          }
+        }
         // 当没有更多数据、返回数据为空时
-        if(options.status === 'empty' || options.status === 'nomore'){
-          that.$element.append(that.$nomore);
-          // that.$scrollArea.off('scroll', handleScroll)
+        else if(options.status === 'empty' || options.status === 'nomore'){
+
+          that.successLoadTimes++;
+
+          if(that.successLoadTimes === 1 && options.status === 'empty'){
+            that.$element.append(that.$empty);
+          }
+          // 只有一页数据时不显示nomore
+          else if(that.successLoadTimes !== 1 && (options.status === 'nomore' || options.status === 'empty') ){
+            that.$element.append(that.$nomore);
+          }
+          // 移除滚动事件
           that.remove();
         }
-        // 当返回数据错误时
+        
         else {
-          callback && callback.call(that); //自动加载时执行的回调
-          if(options.status === 'error') {
-            console.log('error');
-          }
+
+          // 请求成功 将请求失败次数清0
+          that.failLoadTimes = 0;
+          
+          // 请求成功 如果是自动加载至全屏则执行自动加载的回调
+          callback && callback.call(that);
         }
 
       });
